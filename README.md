@@ -1,9 +1,8 @@
 <p align="center">
-  <picture>
-    <source media="(prefers-color-scheme: dark)" srcset="custom_components/ais_tanker/brand/dark_logo.png">
-    <img alt="AIS Tanker Tracker" src="custom_components/ais_tanker/brand/logo.png" width="424">
-  </picture>
+  <img alt="AIS Tanker Tracker" src="custom_components/ais_tanker/brand/icon.png" width="140">
 </p>
+
+<h1 align="center">AIS Tanker Tracker</h1>
 
 <p align="center">
   <b>Live tanker tracking for Home Assistant</b><br>
