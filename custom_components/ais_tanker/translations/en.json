@@ -1,0 +1,91 @@
+{
+  "config": {
+    "step": {
+      "user": {
+        "title": "AIS Tanker Tracker",
+        "description": "Tracks tanker vessels (AIS ship type 80-89) from the local AIS-catcher MQTT stream, aisstream.io and AISHub.",
+        "data": {
+          "enable_mqtt": "Use local AIS-catcher via MQTT",
+          "mqtt_topic": "MQTT topic",
+          "aisstream_api_key": "aisstream.io API key",
+          "aishub_api_key": "AISHub username / API key",
+          "aishub_zones": "Zones (aisstream.io + AISHub)",
+          "aishub_scan_interval": "AISHub request interval",
+          "stale_timeout_minutes": "Stale timeout",
+          "max_tracked_vessels": "Maximum device trackers",
+          "enable_demo_vessels": "Create demo tankers"
+        },
+        "data_description": {
+          "enable_mqtt": "Subscribe to the JSON messages published by the AIS-catcher add-on (MSGFORMAT JSON_FULL).",
+          "mqtt_topic": "Topic used by AIS-catcher, wildcards allowed (for example ais/# or ais/data).",
+          "aisstream_api_key": "Free real time AIS feed (sign in at aisstream.io). Leave empty to disable.",
+          "aishub_api_key": "Leave empty to disable AISHub.",
+          "aishub_zones": "Format name:latmin,latmax,lonmin,lonmax. Separate multiple zones with ; or new lines. Empty: global AISHub request and a 3 degree box around home for aisstream.io.",
+          "aishub_scan_interval": "Seconds between two AISHub requests (minimum 65, AISHub allows 1 request per minute).",
+          "stale_timeout_minutes": "Vessels without updates for this time are removed.",
+          "max_tracked_vessels": "Nearest tankers that get a device_tracker entity (0 disables trackers).",
+          "enable_demo_vessels": "Adds 3 moving test tankers in the Andaman Sea / Strait of Malacca."
+        }
+      }
+    },
+    "error": {
+      "invalid_topic": "Invalid MQTT topic.",
+      "invalid_zones": "Invalid zone definition. Use name:latmin,latmax,lonmin,lonmax with latmin < latmax and lonmin < lonmax.",
+      "scan_interval_too_low": "The AISHub interval must be at least 65 seconds.",
+      "no_source": "Enable at least one source: MQTT, aisstream.io key, AISHub key or demo vessels."
+    },
+    "abort": {
+      "already_configured": "AIS Tanker Tracker is already configured.",
+      "single_instance_allowed": "Only one instance of AIS Tanker Tracker is allowed."
+    }
+  },
+  "options": {
+    "step": {
+      "init": {
+        "title": "AIS Tanker Tracker options",
+        "description": "Changes are applied immediately, the integration reloads automatically.",
+        "data": {
+          "enable_mqtt": "Use local AIS-catcher via MQTT",
+          "mqtt_topic": "MQTT topic",
+          "aisstream_api_key": "aisstream.io API key",
+          "aishub_api_key": "AISHub username / API key",
+          "aishub_zones": "Zones (aisstream.io + AISHub)",
+          "aishub_scan_interval": "AISHub request interval",
+          "stale_timeout_minutes": "Stale timeout",
+          "max_tracked_vessels": "Maximum device trackers",
+          "enable_demo_vessels": "Create demo tankers"
+        },
+        "data_description": {
+          "enable_mqtt": "Subscribe to the JSON messages published by the AIS-catcher add-on (MSGFORMAT JSON_FULL).",
+          "mqtt_topic": "Topic used by AIS-catcher, wildcards allowed (for example ais/# or ais/data).",
+          "aisstream_api_key": "Free real time AIS feed (sign in at aisstream.io). Leave empty to disable.",
+          "aishub_api_key": "Leave empty to disable AISHub.",
+          "aishub_zones": "Format name:latmin,latmax,lonmin,lonmax. Separate multiple zones with ; or new lines. Empty: global AISHub request and a 3 degree box around home for aisstream.io.",
+          "aishub_scan_interval": "Seconds between two AISHub requests (minimum 65, AISHub allows 1 request per minute).",
+          "stale_timeout_minutes": "Vessels without updates for this time are removed.",
+          "max_tracked_vessels": "Nearest tankers that get a device_tracker entity (0 disables trackers).",
+          "enable_demo_vessels": "Adds 3 moving test tankers in the Andaman Sea / Strait of Malacca."
+        }
+      }
+    },
+    "error": {
+      "invalid_topic": "Invalid MQTT topic.",
+      "invalid_zones": "Invalid zone definition. Use name:latmin,latmax,lonmin,lonmax with latmin < latmax and lonmin < lonmax.",
+      "scan_interval_too_low": "The AISHub interval must be at least 65 seconds.",
+      "no_source": "Enable at least one source: MQTT, aisstream.io key, AISHub key or demo vessels."
+    }
+  },
+  "entity": {
+    "sensor": {
+      "overview": {
+        "name": "Overview"
+      },
+      "local_count": {
+        "name": "Local SDR tankers"
+      },
+      "global_count": {
+        "name": "Global network tankers"
+      }
+    }
+  }
+}

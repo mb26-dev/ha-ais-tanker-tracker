@@ -1,0 +1,22 @@
+{
+  "domain": "ais_tanker",
+  "name": "AIS Tanker Tracker",
+  "after_dependencies": [
+    "mqtt"
+  ],
+  "codeowners": [
+    "@mb26-dev"
+  ],
+  "config_flow": true,
+  "dependencies": [
+    "frontend",
+    "http"
+  ],
+  "documentation": "https://github.com/mb26-dev/ha-ais-tanker-tracker",
+  "integration_type": "service",
+  "iot_class": "local_push",
+  "issue_tracker": "https://github.com/mb26-dev/ha-ais-tanker-tracker/issues",
+  "requirements": [],
+  "single_config_entry": true,
+  "version": "1.2.0"
+}
