@@ -14,6 +14,7 @@
   <img src="https://img.shields.io/badge/Home%20Assistant-2025.1%2B-41BDF5?style=flat-square&logo=home-assistant&logoColor=white" alt="Home Assistant">
   <img src="https://img.shields.io/badge/HACS-custom-orange?style=flat-square" alt="HACS custom">
   <a href="LICENSE"><img src="https://img.shields.io/github/license/mb26-dev/ha-ais-tanker-tracker?style=flat-square" alt="License"></a>
+  <a href="https://ko-fi.com/mb26dev"><img src="https://img.shields.io/badge/Ko--fi-Buy%20me%20a%20coffee-FF5E5B?style=flat-square&logo=ko-fi&logoColor=white" alt="Buy me a coffee on Ko-fi"></a>
 </p>
 
 ![Tanker radar on satellite imagery](images/radar-satellite.jpg)
@@ -197,6 +198,14 @@ estimate: crews do not always update the draught, so treat it as an indication, 
 - The card and the bundled Leaflet 1.9.4 library are served by the integration itself; no code is loaded from a CDN. Only the map tiles come from Esri and OpenSeaMap.
 - Your API keys are stored in the Home Assistant config entry.
 - The persistent ship cache lives in `.storage/ais_tanker.static_cache` (ship type, name, dimensions; entries expire after 14 days).
+
+## Support
+
+If the radar card keeps an eye on the tankers off your coast, a coffee keeps the project afloat. ☕🚢
+
+<a href="https://ko-fi.com/mb26dev"><img src="https://ko-fi.com/img/githubbutton_sm.svg" alt="Support me on Ko-fi"></a>
+
+A star on GitHub, a bug report or a screenshot of your radar helps just as much. Thank you!
 
 ## Disclaimer
 
