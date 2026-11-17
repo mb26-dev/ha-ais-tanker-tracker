@@ -194,7 +194,7 @@ estimate: crews do not always update the draught, so treat it as an indication, 
 ## Privacy and data
 
 - The integration only contacts aisstream.io (subscription with your zones) and AISHub (zone requests).
-- The card is loaded in your browser and fetches Leaflet 1.9.4 from unpkg.com plus map tiles from Esri and OpenSeaMap.
+- The card and the bundled Leaflet 1.9.4 library are served by the integration itself; no code is loaded from a CDN. Only the map tiles come from Esri and OpenSeaMap.
 - Your API keys are stored in the Home Assistant config entry.
 - The persistent ship cache lives in `.storage/ais_tanker.static_cache` (ship type, name, dimensions; entries expire after 14 days).
 
