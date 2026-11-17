@@ -5,12 +5,26 @@
  * Visualises the "vessels" attribute of sensor.ais_tanker_overview on a
  * Leaflet nautical chart inside the Shadow DOM of a Lovelace card.
  *
- * Zero build, single file. Resource: /local/tanker-radar-card.js (module)
+ * Served by the integration at /ais_tanker_static/tanker-radar-card.js and
+ * registered automatically. Leaflet 1.9.4 is bundled next to this file
+ * (www/leaflet/, unmodified, BSD-2-Clause), no CDN or internet access needed.
  */
 
-const TRC_VERSION = "1.1.0";
-const TRC_LEAFLET_JS = "https://unpkg.com/leaflet@1.9.4/dist/leaflet.js";
-const TRC_LEAFLET_CSS = "https://unpkg.com/leaflet@1.9.4/dist/leaflet.css";
+const TRC_VERSION = "1.2.0";
+
+/* Base URL of this module, so the bundled Leaflet is loaded from the same static path */
+const TRC_BASE_URL = (() => {
+  try {
+    const base = new URL(".", import.meta.url);
+    if (base.protocol === "http:" || base.protocol === "https:") return base.href;
+  } catch (err) {
+    /* fall through to the default static path */
+  }
+  return "/ais_tanker_static/";
+})();
+const TRC_LEAFLET_BASE = `${TRC_BASE_URL}leaflet/`;
+const TRC_LEAFLET_JS = `${TRC_LEAFLET_BASE}leaflet.js`;
+const TRC_LEAFLET_CSS = `${TRC_LEAFLET_BASE}leaflet.css`;
 
 const TRC_DEFAULTS = {
   entity: "sensor.ais_tanker_overview",
@@ -145,6 +159,11 @@ function trcLoadLeafletCss() {
   if (!trcLeafletCssPromise) {
     trcLeafletCssPromise = fetch(TRC_LEAFLET_CSS)
       .then((response) => (response.ok ? response.text() : null))
+      .then((css) =>
+        css
+          ? css.replace(/url\((['"]?)images\//g, (match, quote) => `url(${quote}${TRC_LEAFLET_BASE}images/`)
+          : null
+      )
       .catch(() => null);
   }
   return trcLeafletCssPromise;
