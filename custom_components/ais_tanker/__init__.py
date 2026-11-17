@@ -25,14 +25,15 @@ async def async_setup(hass: HomeAssistant, config: ConfigType) -> bool:
     """Serve the bundled tanker-radar-card and load it in the frontend."""
     if hass.data.get(_DATA_CARD_REGISTERED):
         return True
-    card_path = Path(__file__).parent / "www" / CARD_FILENAME
-    if not card_path.is_file():
-        LOGGER.warning("Bundled card %s not found, skipping frontend registration", card_path)
+    www_path = Path(__file__).parent / "www"
+    if not (www_path / CARD_FILENAME).is_file():
+        LOGGER.warning("Bundled card not found in %s, skipping frontend registration", www_path)
         return True
-    url = f"{CARD_URL_BASE}/{CARD_FILENAME}"
+    # Serve the whole www folder: the card plus the bundled Leaflet library
     await hass.http.async_register_static_paths(
-        [StaticPathConfig(url, str(card_path), cache_headers=False)]
+        [StaticPathConfig(CARD_URL_BASE, str(www_path), cache_headers=False)]
     )
+    url = f"{CARD_URL_BASE}/{CARD_FILENAME}"
     # Version query string so browsers fetch the new card after an update
     add_extra_js_url(hass, f"{url}?v={INTEGRATION_VERSION}")
     hass.data[_DATA_CARD_REGISTERED] = True
