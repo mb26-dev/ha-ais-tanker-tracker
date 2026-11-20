@@ -13,7 +13,7 @@ CARD_FILENAME: Final = "tanker-radar-card.js"
 CARD_URL_BASE: Final = "/ais_tanker_static"
 
 DEFAULT_TITLE: Final = "AIS Tanker Tracker"
-INTEGRATION_VERSION: Final = "1.2.1"
+INTEGRATION_VERSION: Final = "1.2.2"
 
 # ---------------------------------------------------------------------------
 # Config / options keys
@@ -98,6 +98,10 @@ DATA_AISHUB_LAST_REQUEST: Final = "aishub_last_request_monotonic"
 # ---------------------------------------------------------------------------
 COORDINATOR_INTERVAL_SECONDS: Final = 15
 PUSH_DEBOUNCE_SECONDS: Final = 5
+# Device trackers: minimum seconds between two recorded state changes, and a
+# heartbeat write even when nothing relevant changed (keeps the recorder small)
+TRACKER_MIN_WRITE_SECONDS: Final = 300
+TRACKER_HEARTBEAT_SECONDS: Final = 1800
 MAX_RAW_CACHE: Final = 5000
 MAX_REJECTED_CACHE: Final = 20000
 REJECTED_TTL_SECONDS: Final = 6 * 3600
@@ -234,7 +238,7 @@ DEMO_VESSELS: Final[tuple[dict[str, Any], ...]] = (
         "course": 135.0,
         "heading": 134,
         "start_lat": 4.10,
-        "start_lon": 99.95,
+        "start_lon": 101.20,
     },
     {
         "mmsi": 567999003,
