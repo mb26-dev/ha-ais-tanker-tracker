@@ -238,7 +238,7 @@ DEMO_VESSELS: Final[tuple[dict[str, Any], ...]] = (
         "course": 135.0,
         "heading": 134,
         "start_lat": 4.10,
-        "start_lon": 101.20,
+        "start_lon": 99.95,
     },
     {
         "mmsi": 567999003,
