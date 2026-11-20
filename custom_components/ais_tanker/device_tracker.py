@@ -7,6 +7,7 @@ from the entity registry to keep the registry and recorder clean.
 
 from __future__ import annotations
 
+import time
 from typing import Any
 
 from homeassistant.components.device_tracker import SourceType, TrackerEntity
@@ -16,7 +17,7 @@ from homeassistant.helpers import entity_registry as er
 from homeassistant.helpers.entity_platform import AddConfigEntryEntitiesCallback
 from homeassistant.helpers.update_coordinator import CoordinatorEntity
 
-from .const import DOMAIN, LOGGER
+from .const import DOMAIN, LOGGER, TRACKER_HEARTBEAT_SECONDS, TRACKER_MIN_WRITE_SECONDS
 from .coordinator import AisTankerConfigEntry, AisTankerCoordinator
 
 TRACKER_ATTRIBUTE_KEYS: tuple[str, ...] = (
@@ -41,6 +42,20 @@ TRACKER_ATTRIBUTE_KEYS: tuple[str, ...] = (
     "bearing_deg",
     "source",
     "last_seen",
+)
+
+# Values that change with almost every AIS message. They stay available as live
+# attributes but are not written to the recorder database, so the stored
+# attribute rows can be shared between state changes.
+TRACKER_UNRECORDED_ATTRIBUTES: frozenset[str] = frozenset(
+    {
+        "speed_knots",
+        "course",
+        "heading",
+        "distance_km",
+        "bearing_deg",
+        "last_seen",
+    }
 )
 
 
@@ -112,6 +127,7 @@ class AisTankerTracker(CoordinatorEntity[AisTankerCoordinator], TrackerEntity):
     _attr_has_entity_name = False
     _attr_icon = "mdi:ferry"
     _attr_source_type = SourceType.GPS
+    _unrecorded_attributes = TRACKER_UNRECORDED_ATTRIBUTES
 
     def __init__(
         self,
@@ -125,6 +141,8 @@ class AisTankerTracker(CoordinatorEntity[AisTankerCoordinator], TrackerEntity):
         self._attr_unique_id = f"{entry.entry_id}_{mmsi}"
         self.entity_id = f"device_tracker.ais_tanker_{mmsi}"
         self._present = False
+        self._last_write = 0.0
+        self._last_signature: tuple[Any, ...] | None = None
         self._update_from_data()
 
     @callback
@@ -149,8 +167,44 @@ class AisTankerTracker(CoordinatorEntity[AisTankerCoordinator], TrackerEntity):
         """Available only while the tanker is active."""
         return super().available and self._present
 
+    def _signature(self) -> tuple[Any, ...]:
+        """Values whose change is worth a new state in the database."""
+        attrs = self._attr_extra_state_attributes or {}
+        lat = getattr(self, "_attr_latitude", None)
+        lon = getattr(self, "_attr_longitude", None)
+        return (
+            self.available,
+            round(lat, 4) if isinstance(lat, (int, float)) else lat,
+            round(lon, 4) if isinstance(lon, (int, float)) else lon,
+            attrs.get("name"),
+            attrs.get("load_status"),
+            attrs.get("nav_status"),
+            attrs.get("destination"),
+            attrs.get("draught_m"),
+            attrs.get("source"),
+        )
+
     @callback
     def _handle_coordinator_update(self) -> None:
-        """Handle updated data from the coordinator."""
+        """Handle updated data from the coordinator, with throttled state writes.
+
+        AIS sends a position every few seconds. Writing every one of them for up
+        to max_tracked_vessels trackers floods the recorder database, so a tracker
+        writes its state only when it becomes available or unavailable, when a
+        relevant value changed and TRACKER_MIN_WRITE_SECONDS have passed, or as a
+        heartbeat after TRACKER_HEARTBEAT_SECONDS.
+        """
         self._update_from_data()
-        super()._handle_coordinator_update()
+        signature = self._signature()
+        now = time.monotonic()
+        if self._last_signature is not None:
+            availability_changed = signature[0] != self._last_signature[0]
+            elapsed = now - self._last_write
+            if not availability_changed:
+                if signature == self._last_signature and elapsed < TRACKER_HEARTBEAT_SECONDS:
+                    return
+                if elapsed < TRACKER_MIN_WRITE_SECONDS:
+                    return
+        self._last_signature = signature
+        self._last_write = now
+        self.async_write_ha_state()

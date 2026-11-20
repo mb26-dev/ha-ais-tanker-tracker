@@ -1,5 +1,14 @@
 # Changelog
 
+## 1.2.2 - 2026-11-20
+
+- **Much smaller recorder database.** Device trackers no longer write a new state for every AIS message. A tracker now
+  writes when it appears or disappears, when position, name, load state, nav status, destination, draught or source
+  changed (at most every 5 minutes), and otherwise as a heartbeat every 30 minutes.
+- Fast-changing tracker attributes (`speed_knots`, `course`, `heading`, `distance_km`, `bearing_deg`, `last_seen`) stay
+  live in Home Assistant but are excluded from the recorder.
+- The `vessels` list of the overview sensor was already excluded from the recorder; the live card is not affected.
+
 ## 1.2.1 - 2026-11-17
 
 - Leaflet 1.9.4 (JS, CSS, images, BSD-2-Clause license) is now bundled under `custom_components/ais_tanker/www/leaflet/`
