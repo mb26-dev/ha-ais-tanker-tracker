@@ -157,6 +157,24 @@ triggers:
          | list | count > 0 }}
 ```
 
+## Database size
+
+The integration is built to keep the recorder small:
+
+- The `vessels` list of the overview sensor and its message counters are excluded from the recorder.
+- Device trackers write a new state at most every 5 minutes (plus a 30 minute heartbeat), and their fast-changing
+  attributes (speed, course, heading, distance, bearing, last seen) are not recorded.
+
+If you do not need tanker history at all, you can exclude the entities completely in `configuration.yaml`:
+
+```yaml
+recorder:
+  exclude:
+    entity_globs:
+      - device_tracker.ais_tanker_*
+      - sensor.ais_tanker_*
+```
+
 ## Radar card
 
 The card is shipped with the integration and registered automatically (`/ais_tanker_static/tanker-radar-card.js`).
