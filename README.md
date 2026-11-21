@@ -1,8 +1,6 @@
 <p align="center">
-  <img alt="AIS Tanker Tracker" src="custom_components/ais_tanker/brand/icon.png" width="140">
+  <img alt="AIS Tanker Tracker" src="images/banner.jpg" width="100%">
 </p>
-
-<h1 align="center">AIS Tanker Tracker</h1>
 
 <p align="center">
   <b>Live tanker tracking for Home Assistant</b><br>
