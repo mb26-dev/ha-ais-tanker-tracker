@@ -1,0 +1,82 @@
+name: Build brand images
+
+# Builds the Home Assistant brand images (icon, logo) and the README banner
+# from images/artwork.jpg. Runs on demand and whenever this workflow changes.
+
+on:
+  workflow_dispatch:
+  push:
+    branches: [main]
+    paths:
+      - .github/workflows/build-brand.yml
+
+permissions:
+  contents: write
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+
+      - name: Install Pillow
+        run: pip install pillow==11.3.0
+
+      - name: Use uploaded artwork as source
+        run: |
+          if [ -f images/image.jpg ]; then
+            git mv images/image.jpg images/artwork.jpg
+          fi
+          test -f images/artwork.jpg
+
+      - name: Build images
+        run: |
+          python - <<'EOF'
+          from PIL import Image
+
+          BRAND = "custom_components/ais_tanker/brand"
+          src = Image.open("images/artwork.jpg").convert("RGB")
+          width, height = src.size
+
+          # Square icon: the radar on the left side of the artwork
+          left = round(width * 88 / 2576)
+          square = src.crop((left, 0, left + height, height))
+          for name, size in (("icon.png", 256), ("icon@2x.png", 512)):
+              square.resize((size, size), Image.LANCZOS).save(f"{BRAND}/{name}", optimize=True)
+
+          # Landscape logo (same artwork for light and dark themes)
+          for suffix, logo_height in (("", 256), ("@2x", 512)):
+              logo_width = round(width * logo_height / height)
+              logo = src.resize((logo_width, logo_height), Image.LANCZOS)
+              logo.save(f"{BRAND}/logo{suffix}.png", optimize=True)
+              logo.save(f"{BRAND}/dark_logo{suffix}.png", optimize=True)
+
+          # README banner
+          banner_width = 1600
+          src.resize((banner_width, round(height * banner_width / width)), Image.LANCZOS).save(
+              "images/banner.jpg", quality=88, optimize=True, progressive=True
+          )
+
+          # GitHub social preview (1280 x 640)
+          background = src.getpixel((5, 5))
+          preview = Image.new("RGB", (1280, 640), background)
+          scaled = src.resize((1280, round(height * 1280 / width)), Image.LANCZOS)
+          preview.paste(scaled, (0, (640 - scaled.size[1]) // 2))
+          preview.save("images/social-preview.jpg", quality=90)
+          EOF
+
+      - name: Commit images
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add -A images custom_components/ais_tanker/brand
+          if git diff --cached --quiet; then
+            echo "Nothing to commit"
+            exit 0
+          fi
+          git commit -m "Build brand images and banner from project artwork"
+          git push
