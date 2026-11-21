@@ -1,5 +1,11 @@
 # Changelog
 
+## 1.2.3 - 2026-11-21
+
+- New project artwork: new icon and logo for Home Assistant and the Marketplace (`brand/`, including `@2x` versions),
+  new README banner and GitHub social preview. The images are built from `images/artwork.jpg` by
+  `.github/workflows/build-brand.yml`.
+
 ## 1.2.2 - 2026-11-20
 
 - **Much smaller recorder database.** Device trackers no longer write a new state for every AIS message. A tracker now
