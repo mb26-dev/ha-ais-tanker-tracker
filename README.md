@@ -228,6 +228,15 @@ If the radar card keeps an eye on the tankers off your coast, a coffee keeps the
 
 A star on GitHub, a bug report or a screenshot of your radar helps just as much. Thank you!
 
+## Troubleshooting
+
+- **Settings > Devices & services > AIS Tanker Tracker > ⋮ > Download diagnostics** creates a file for bug reports.
+  It contains feed status, counters and a few sample vessels, but no API keys, no zone coordinates and no distance or
+  bearing from your home.
+- Please attach it to an [issue](https://github.com/mb26-dev/ha-ais-tanker-tracker/issues) together with a short description.
+
+The integration is available in English and German.
+
 ## Disclaimer
 
 For hobby and information use only. **Not for navigation.** AIS data can be incomplete, delayed or wrong.
