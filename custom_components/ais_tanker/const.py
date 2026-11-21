@@ -13,7 +13,7 @@ CARD_FILENAME: Final = "tanker-radar-card.js"
 CARD_URL_BASE: Final = "/ais_tanker_static"
 
 DEFAULT_TITLE: Final = "AIS Tanker Tracker"
-INTEGRATION_VERSION: Final = "1.2.3"
+INTEGRATION_VERSION: Final = "1.2.4"
 
 # ---------------------------------------------------------------------------
 # Config / options keys
