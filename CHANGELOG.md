@@ -1,5 +1,11 @@
 # Changelog
 
+## 1.2.4 - 2026-11-21
+
+- **Diagnostics download** (Settings > Devices & services > AIS Tanker Tracker > ⋮ > Download diagnostics) for bug reports.
+  API keys, zone coordinates and distance / bearing from home are removed, so the file does not reveal your location.
+- German translation reworked: proper umlauts and clearer wording.
+
 ## 1.2.3 - 2026-11-21
 
 - New project artwork: new icon and logo for Home Assistant and the Marketplace (`brand/`, including `@2x` versions),

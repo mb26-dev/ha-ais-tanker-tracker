@@ -3,88 +3,88 @@
     "step": {
       "user": {
         "title": "AIS Tanker Tracker",
-        "description": "Verfolgt Tankschiffe (AIS-Schiffstyp 80-89) aus dem lokalen AIS-catcher-MQTT-Stream, aisstream.io und AISHub.",
+        "description": "Verfolgt Tankschiffe (AIS-Schiffstyp 80–89) aus dem lokalen AIS-catcher-MQTT-Stream, von aisstream.io und AISHub.",
         "data": {
           "enable_mqtt": "Lokalen AIS-catcher per MQTT nutzen",
           "mqtt_topic": "MQTT-Topic",
-          "aisstream_api_key": "aisstream.io API-Key",
-          "aishub_api_key": "AISHub-Benutzername / API-Key",
+          "aisstream_api_key": "aisstream.io-API-Schlüssel",
+          "aishub_api_key": "AISHub-Benutzername / API-Schlüssel",
           "aishub_zones": "Zonen (aisstream.io + AISHub)",
-          "aishub_scan_interval": "AISHub-Abrufintervall",
-          "stale_timeout_minutes": "Timeout fuer veraltete Schiffe",
+          "aishub_scan_interval": "AISHub-Abfrageintervall",
+          "stale_timeout_minutes": "Zeit bis zum Entfernen",
           "max_tracked_vessels": "Maximale Anzahl Device-Tracker",
-          "enable_demo_vessels": "Demo-Tanker erzeugen"
+          "enable_demo_vessels": "Demo-Tanker anlegen"
         },
         "data_description": {
-          "enable_mqtt": "Abonniert die JSON-Nachrichten des AIS-catcher-Add-ons (MSGFORMAT JSON_FULL).",
-          "mqtt_topic": "Topic des AIS-catcher, Wildcards erlaubt (z. B. ais/# oder ais/data).",
-          "aisstream_api_key": "Kostenloser Echtzeit-AIS-Feed (Anmeldung auf aisstream.io). Leer lassen zum Deaktivieren.",
+          "enable_mqtt": "Abonniert die JSON-Nachrichten der AIS-catcher-App (MSGFORMAT JSON_FULL).",
+          "mqtt_topic": "Topic, auf dem AIS-catcher sendet, Platzhalter erlaubt (z. B. ais/# oder ais/data).",
+          "aisstream_api_key": "Kostenloser AIS-Echtzeit-Feed (Anmeldung auf aisstream.io). Leer lassen, um ihn zu deaktivieren.",
           "aishub_api_key": "Leer lassen, um AISHub zu deaktivieren.",
-          "aishub_zones": "Format name:latmin,latmax,lonmin,lonmax. Mehrere Zonen mit ; oder Zeilenumbruch trennen. Leer: globaler AISHub-Abruf und 3-Grad-Box um Zuhause fuer aisstream.io.",
-          "aishub_scan_interval": "Sekunden zwischen zwei AISHub-Abrufen (Minimum 65, AISHub erlaubt 1 Abruf pro Minute).",
-          "stale_timeout_minutes": "Schiffe ohne Update innerhalb dieser Zeit werden entfernt.",
-          "max_tracked_vessels": "Naechstgelegene Tanker, die eine device_tracker-Entitaet erhalten (0 = keine Tracker).",
-          "enable_demo_vessels": "Fuegt 3 fahrende Test-Tanker in der Andamanensee / Strasse von Malakka hinzu."
+          "aishub_zones": "Format name:latmin,latmax,lonmin,lonmax. Mehrere Zonen mit ; oder einem Zeilenumbruch trennen. Leer: weltweite AISHub-Abfrage und für aisstream.io ein Bereich von 3 Grad um dein Zuhause.",
+          "aishub_scan_interval": "Sekunden zwischen zwei AISHub-Abfragen (mindestens 65, AISHub erlaubt eine Abfrage pro Minute).",
+          "stale_timeout_minutes": "Schiffe ohne neue Daten innerhalb dieser Zeit (in Minuten) werden entfernt.",
+          "max_tracked_vessels": "Die nächstgelegenen Tanker bekommen eine device_tracker-Entität (0 = keine Tracker).",
+          "enable_demo_vessels": "Fügt 3 fahrende Test-Tanker in der Andamanensee und der Straße von Malakka hinzu."
         }
       }
     },
     "error": {
-      "invalid_topic": "Ungueltiges MQTT-Topic.",
-      "invalid_zones": "Ungueltige Zonendefinition. Format name:latmin,latmax,lonmin,lonmax mit latmin < latmax und lonmin < lonmax.",
+      "invalid_topic": "Ungültiges MQTT-Topic.",
+      "invalid_zones": "Ungültige Zonendefinition. Format name:latmin,latmax,lonmin,lonmax mit latmin < latmax und lonmin < lonmax.",
       "scan_interval_too_low": "Das AISHub-Intervall muss mindestens 65 Sekunden betragen.",
-      "no_source": "Mindestens eine Quelle aktivieren: MQTT, aisstream.io-Key, AISHub-Key oder Demo-Schiffe."
+      "no_source": "Mindestens eine Quelle aktivieren: MQTT, aisstream.io-Schlüssel, AISHub-Schlüssel oder Demo-Tanker."
     },
     "abort": {
       "already_configured": "AIS Tanker Tracker ist bereits eingerichtet.",
-      "single_instance_allowed": "Es ist nur eine Instanz von AIS Tanker Tracker erlaubt."
+      "single_instance_allowed": "Es ist nur eine Instanz von AIS Tanker Tracker möglich."
     }
   },
   "options": {
     "step": {
       "init": {
-        "title": "AIS Tanker Tracker Optionen",
-        "description": "Aenderungen werden sofort uebernommen, die Integration wird automatisch neu geladen.",
+        "title": "AIS Tanker Tracker – Optionen",
+        "description": "Änderungen werden sofort übernommen, die Integration lädt sich dabei automatisch neu.",
         "data": {
           "enable_mqtt": "Lokalen AIS-catcher per MQTT nutzen",
           "mqtt_topic": "MQTT-Topic",
-          "aisstream_api_key": "aisstream.io API-Key",
-          "aishub_api_key": "AISHub-Benutzername / API-Key",
+          "aisstream_api_key": "aisstream.io-API-Schlüssel",
+          "aishub_api_key": "AISHub-Benutzername / API-Schlüssel",
           "aishub_zones": "Zonen (aisstream.io + AISHub)",
-          "aishub_scan_interval": "AISHub-Abrufintervall",
-          "stale_timeout_minutes": "Timeout fuer veraltete Schiffe",
+          "aishub_scan_interval": "AISHub-Abfrageintervall",
+          "stale_timeout_minutes": "Zeit bis zum Entfernen",
           "max_tracked_vessels": "Maximale Anzahl Device-Tracker",
-          "enable_demo_vessels": "Demo-Tanker erzeugen"
+          "enable_demo_vessels": "Demo-Tanker anlegen"
         },
         "data_description": {
-          "enable_mqtt": "Abonniert die JSON-Nachrichten des AIS-catcher-Add-ons (MSGFORMAT JSON_FULL).",
-          "mqtt_topic": "Topic des AIS-catcher, Wildcards erlaubt (z. B. ais/# oder ais/data).",
-          "aisstream_api_key": "Kostenloser Echtzeit-AIS-Feed (Anmeldung auf aisstream.io). Leer lassen zum Deaktivieren.",
+          "enable_mqtt": "Abonniert die JSON-Nachrichten der AIS-catcher-App (MSGFORMAT JSON_FULL).",
+          "mqtt_topic": "Topic, auf dem AIS-catcher sendet, Platzhalter erlaubt (z. B. ais/# oder ais/data).",
+          "aisstream_api_key": "Kostenloser AIS-Echtzeit-Feed (Anmeldung auf aisstream.io). Leer lassen, um ihn zu deaktivieren.",
           "aishub_api_key": "Leer lassen, um AISHub zu deaktivieren.",
-          "aishub_zones": "Format name:latmin,latmax,lonmin,lonmax. Mehrere Zonen mit ; oder Zeilenumbruch trennen. Leer: globaler AISHub-Abruf und 3-Grad-Box um Zuhause fuer aisstream.io.",
-          "aishub_scan_interval": "Sekunden zwischen zwei AISHub-Abrufen (Minimum 65, AISHub erlaubt 1 Abruf pro Minute).",
-          "stale_timeout_minutes": "Schiffe ohne Update innerhalb dieser Zeit werden entfernt.",
-          "max_tracked_vessels": "Naechstgelegene Tanker, die eine device_tracker-Entitaet erhalten (0 = keine Tracker).",
-          "enable_demo_vessels": "Fuegt 3 fahrende Test-Tanker in der Andamanensee / Strasse von Malakka hinzu."
+          "aishub_zones": "Format name:latmin,latmax,lonmin,lonmax. Mehrere Zonen mit ; oder einem Zeilenumbruch trennen. Leer: weltweite AISHub-Abfrage und für aisstream.io ein Bereich von 3 Grad um dein Zuhause.",
+          "aishub_scan_interval": "Sekunden zwischen zwei AISHub-Abfragen (mindestens 65, AISHub erlaubt eine Abfrage pro Minute).",
+          "stale_timeout_minutes": "Schiffe ohne neue Daten innerhalb dieser Zeit (in Minuten) werden entfernt.",
+          "max_tracked_vessels": "Die nächstgelegenen Tanker bekommen eine device_tracker-Entität (0 = keine Tracker).",
+          "enable_demo_vessels": "Fügt 3 fahrende Test-Tanker in der Andamanensee und der Straße von Malakka hinzu."
         }
       }
     },
     "error": {
-      "invalid_topic": "Ungueltiges MQTT-Topic.",
-      "invalid_zones": "Ungueltige Zonendefinition. Format name:latmin,latmax,lonmin,lonmax mit latmin < latmax und lonmin < lonmax.",
+      "invalid_topic": "Ungültiges MQTT-Topic.",
+      "invalid_zones": "Ungültige Zonendefinition. Format name:latmin,latmax,lonmin,lonmax mit latmin < latmax und lonmin < lonmax.",
       "scan_interval_too_low": "Das AISHub-Intervall muss mindestens 65 Sekunden betragen.",
-      "no_source": "Mindestens eine Quelle aktivieren: MQTT, aisstream.io-Key, AISHub-Key oder Demo-Schiffe."
+      "no_source": "Mindestens eine Quelle aktivieren: MQTT, aisstream.io-Schlüssel, AISHub-Schlüssel oder Demo-Tanker."
     }
   },
   "entity": {
     "sensor": {
       "overview": {
-        "name": "Uebersicht"
+        "name": "Übersicht"
       },
       "local_count": {
-        "name": "Lokale SDR-Tanker"
+        "name": "Tanker lokaler SDR"
       },
       "global_count": {
-        "name": "Tanker aus globalen Netzen"
+        "name": "Tanker globaler Netze"
       }
     }
   }
