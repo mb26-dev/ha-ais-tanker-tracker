@@ -52,6 +52,11 @@ async def async_get_config_entry_diagnostics(
         "integration_version": INTEGRATION_VERSION,
         "options": async_redact_data(options, TO_REDACT_OPTIONS),
         "configured_zones": [zone.name for zone in zones],
+        "tracker_min_write_seconds": getattr(coordinator, "tracker_min_write_seconds", None),
+        "zone_events": {
+            "fired_total": getattr(coordinator, "zone_events_total", None),
+            "warmup_active": getattr(coordinator, "zone_warmup_active", None),
+        },
         "coordinator": {
             "last_update_success": coordinator.last_update_success,
             "update_interval_seconds": (

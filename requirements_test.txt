@@ -1,0 +1,4 @@
+# Test dependencies (CI: .github/workflows/tests.yml)
+pytest-homeassistant-custom-component
+# Needed to import homeassistant.components.mqtt in the tests
+paho-mqtt
