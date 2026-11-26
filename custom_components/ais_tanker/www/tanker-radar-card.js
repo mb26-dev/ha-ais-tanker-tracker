@@ -10,7 +10,7 @@
  * (www/leaflet/, unmodified, BSD-2-Clause), no CDN or internet access needed.
  */
 
-const TRC_VERSION = "1.2.0";
+const TRC_VERSION = "1.2.6";
 
 /* Base URL of this module, so the bundled Leaflet is loaded from the same static path */
 const TRC_BASE_URL = (() => {
@@ -195,7 +195,20 @@ function trcLoadStyle(status) {
 }
 
 function trcSource(source) {
-  return TRC_SOURCES[source] || { label: String(source || "UNKNOWN").toUpperCase(), short: "?", color: "#94a3b8" };
+  return TRC_SOURCES[source] || { label: trcEsc(String(source || "UNKNOWN").toUpperCase()), short: "?", color: "#94a3b8" };
+}
+
+// vessels come from radio broadcasts and public AIS feeds: the MMSI is reduced to digits (it is used in
+// element ids and data attributes) and every numeric field is forced to a number before rendering
+const TRC_NUMERIC = ["lat", "lon", "course", "heading", "speed_knots", "length_m", "width_m", "draught_m", "distance_km", "bearing_deg"];
+function trcVessel(v) {
+  if (!v || v.mmsi === undefined || v.mmsi === null) return null;
+  const mmsi = String(v.mmsi).replace(/\D/g, "");
+  if (!mmsi) return null;
+  const out = { ...v, mmsi: Number(mmsi) };
+  for (const k of TRC_NUMERIC) if (k in out) out[k] = trcNum(out[k]);
+  if (out.imo != null) out.imo = String(out.imo).replace(/\D/g, "") || null;
+  return out;
 }
 
 function trcRotation(v) {
@@ -1096,7 +1109,7 @@ class TankerRadarCard extends HTMLElement {
     }
     this._el.error.classList.add("hidden");
     const attrs = st.attributes || {};
-    this._vessels = Array.isArray(attrs.vessels) ? attrs.vessels.filter((v) => v && v.mmsi !== undefined) : [];
+    this._vessels = Array.isArray(attrs.vessels) ? attrs.vessels.map(trcVessel).filter(Boolean) : [];
     this._byMmsi = new Map(this._vessels.map((v) => [v.mmsi, v]));
 
     this._renderHud(st, attrs);

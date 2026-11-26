@@ -1,5 +1,9 @@
 # Changelog
 
+## 1.2.6 - 2026-11-27
+
+- **Safe rendering:** Vessel data from radio broadcasts and public AIS feeds is cleaned before the card renders it: the MMSI is reduced to digits, all numeric fields are forced to numbers, unknown source labels are escaped.
+
 ## 1.2.5 - 2026-11-26
 
 - **Zone events**: when a tanker enters or leaves one of the configured zones, the integration fires
