@@ -1,5 +1,19 @@
 # Changelog
 
+## 1.2.5 - 2026-11-26
+
+- **Zone events**: when a tanker enters or leaves one of the configured zones, the integration fires
+  `ais_tanker_zone_entered` / `ais_tanker_zone_left` with `zone`, `mmsi`, `name`, `load_status`, `vessel_class` and more.
+  The field `reason` tells whether the tanker crossed the border (`moved`), showed up inside the zone (`appeared`) or
+  was lost (`lost`). Tankers found during the first 5 minutes after a start do not fire `entered`.
+- **Event entities**: one `event.ais_tanker_zone_<zone>` per zone with the event types `entered` and `left`, usable in the
+  automation editor without templates. Entities of removed zones are cleaned up.
+- New tracker and vessel attribute `zones` (names of the zones the tanker is in).
+- **Device tracker update interval** is now an option (30-3600 s, default 300 s). Existing installations keep 300 s.
+  The 30 minute heartbeat is never shorter than the configured interval.
+- Diagnostics show the tracker interval and the number of zone events.
+- Tests (pytest with pytest-homeassistant-custom-component) and ruff now run in CI on every push and pull request.
+
 ## 1.2.4 - 2026-11-21
 
 - **Diagnostics download** (Settings > Devices & services > AIS Tanker Tracker > ⋮ > Download diagnostics) for bug reports.
