@@ -14,7 +14,7 @@ from homeassistant.helpers.typing import ConfigType
 from .const import CARD_FILENAME, CARD_URL_BASE, DOMAIN, INTEGRATION_VERSION, LOGGER
 from .coordinator import AisTankerConfigEntry, AisTankerCoordinator
 
-PLATFORMS: list[Platform] = [Platform.SENSOR, Platform.DEVICE_TRACKER]
+PLATFORMS: list[Platform] = [Platform.SENSOR, Platform.DEVICE_TRACKER, Platform.EVENT]
 
 CONFIG_SCHEMA = cv.config_entry_only_config_schema(DOMAIN)
 

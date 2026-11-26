@@ -5,12 +5,14 @@ Merges three sources per MMSI (priority in this order):
   * the aisstream.io websocket stream (push, real time)
   * the global AISHub JSON web service (poll, rate limited)
 and publishes a filtered, enriched snapshot of tanker vessels (types 80..89).
+Zone transitions (a tanker enters or leaves a configured zone) are fired as
+Home Assistant bus events and forwarded to the zone event entities.
 """
 
 from __future__ import annotations
 
 import asyncio
-from collections.abc import Iterator
+from collections.abc import Iterable, Iterator
 from dataclasses import dataclass, field
 from datetime import UTC, datetime, timedelta
 import json
@@ -27,6 +29,8 @@ from homeassistant.config_entries import ConfigEntry
 from homeassistant.core import CALLBACK_TYPE, HomeAssistant, callback
 from homeassistant.exceptions import ConfigEntryNotReady
 from homeassistant.helpers.aiohttp_client import async_get_clientsession
+from homeassistant.helpers.device_registry import DeviceEntryType, DeviceInfo
+from homeassistant.helpers.dispatcher import async_dispatcher_send
 from homeassistant.helpers.event import async_call_later
 from homeassistant.helpers.storage import Store
 from homeassistant.helpers.update_coordinator import DataUpdateCoordinator
@@ -67,12 +71,17 @@ from .const import (
     CONF_MAX_TRACKED_VESSELS,
     CONF_MQTT_TOPIC,
     CONF_STALE_TIMEOUT_MINUTES,
+    CONF_TRACKER_MIN_WRITE_SECONDS,
     COORDINATOR_INTERVAL_SECONDS,
     DATA_AISHUB_LAST_REQUEST,
     DEFAULT_OPTIONS,
+    DEFAULT_TITLE,
     DEMO_LOOP_SECONDS,
     DEMO_VESSELS,
     DOMAIN,
+    EVENT_ZONE_ENTERED,
+    EVENT_ZONE_LEFT,
+    INTEGRATION_VERSION,
     LADEN_RATIO_LARGE,
     LADEN_RATIO_SMALL,
     LOAD_STATUS_BALLAST,
@@ -84,10 +93,13 @@ from .const import (
     MAX_REJECTED_CACHE,
     MAX_STATIC_CACHE,
     MAX_TRACKED_LIMIT,
+    MAX_TRACKER_WRITE_SECONDS,
+    MIN_TRACKER_WRITE_SECONDS,
     NAV_STATUS_LABELS,
     NAV_STATUS_UNKNOWN,
     PUSH_DEBOUNCE_SECONDS,
     REJECTED_TTL_SECONDS,
+    SIGNAL_ZONE_EVENT,
     SMALL_TANKER_LENGTH_M,
     SOURCE_AISHUB,
     SOURCE_AISSTREAM,
@@ -102,6 +114,12 @@ from .const import (
     TANKER_TYPE_MAX,
     TANKER_TYPE_MIN,
     VESSEL_CLASS_UNKNOWN,
+    ZONE_EVENT_TYPE_ENTERED,
+    ZONE_EVENT_TYPE_LEFT,
+    ZONE_EVENT_WARMUP_SECONDS,
+    ZONE_REASON_APPEARED,
+    ZONE_REASON_LOST,
+    ZONE_REASON_MOVED,
 )
 
 EARTH_RADIUS_KM = 6371.0088
@@ -119,6 +137,23 @@ _ZONE_PATTERN = re.compile(
 )
 _ZONE_SEPARATORS = ",;|\n\r\t "
 _ETA_PATTERN = re.compile(r"^(\d{1,2})-(\d{1,2})[ T](\d{1,2}):(\d{1,2})")
+
+# Vessel fields copied into the zone event data (besides zone and reason)
+ZONE_EVENT_FIELDS: tuple[str, ...] = (
+    "mmsi",
+    "name",
+    "load_status",
+    "vessel_class",
+    "vessel_type_code",
+    "vessel_type_label",
+    "draught_m",
+    "speed_knots",
+    "course",
+    "destination",
+    "lat",
+    "lon",
+    "source",
+)
 
 
 # ---------------------------------------------------------------------------
@@ -206,6 +241,56 @@ def parse_zones(raw: str | None) -> list[AisHubZone]:
         zones.append(AisHubZone(name, lat_min, lat_max, lon_min, lon_max))
         pos = match.end()
     return zones
+
+
+def unique_zone_names(zones: Iterable[AisHubZone]) -> list[str]:
+    """Zone names in configuration order, without duplicates."""
+    names: list[str] = []
+    for zone in zones:
+        if zone.name not in names:
+            names.append(zone.name)
+    return names
+
+
+def zones_containing(zones: Iterable[AisHubZone], lat: float, lon: float) -> list[str]:
+    """Names of all zones that contain the position (configuration order, unique)."""
+    names: list[str] = []
+    for zone in zones:
+        if (
+            zone.lat_min <= lat <= zone.lat_max
+            and zone.lon_min <= lon <= zone.lon_max
+            and zone.name not in names
+        ):
+            names.append(zone.name)
+    return names
+
+
+def zone_event_payload(vessel: dict[str, Any], zone: str, reason: str) -> dict[str, Any]:
+    """Event data for a zone transition of one vessel."""
+    payload: dict[str, Any] = {key: vessel.get(key) for key in ZONE_EVENT_FIELDS}
+    payload["zone"] = zone
+    payload["reason"] = reason
+    return payload
+
+
+def clamp_tracker_interval(value: Any) -> int:
+    """Return a valid tracker write interval in seconds (default for bad values)."""
+    number = _to_int(value)
+    if number is None:
+        number = int(DEFAULT_OPTIONS[CONF_TRACKER_MIN_WRITE_SECONDS])
+    return max(MIN_TRACKER_WRITE_SECONDS, min(MAX_TRACKER_WRITE_SECONDS, number))
+
+
+def service_device_info(entry_id: str) -> DeviceInfo:
+    """Device that groups the sensors and zone event entities of an entry."""
+    return DeviceInfo(
+        identifiers={(DOMAIN, entry_id)},
+        name=DEFAULT_TITLE,
+        manufacturer="AIS-catcher / AISHub",
+        model="AIS Tanker Tracker",
+        sw_version=INTEGRATION_VERSION,
+        entry_type=DeviceEntryType.SERVICE,
+    )
 
 
 def is_tanker_type(shiptype: Any) -> bool:
@@ -711,6 +796,10 @@ class AisTankerCoordinator(DataUpdateCoordinator[AisTankerData]):
             0, min(MAX_TRACKED_LIMIT, int(options[CONF_MAX_TRACKED_VESSELS]))
         )
         self._demo_enabled: bool = bool(options[CONF_ENABLE_DEMO_VESSELS])
+        # Missing in entries created before 1.2.5: DEFAULT_OPTIONS gives 300 s
+        self._tracker_min_write: int = clamp_tracker_interval(
+            options[CONF_TRACKER_MIN_WRITE_SECONDS]
+        )
 
         self._session = async_get_clientsession(hass)
 
@@ -750,6 +839,40 @@ class AisTankerCoordinator(DataUpdateCoordinator[AisTankerData]):
         self._aisstream_last_message: float | None = None
 
         self._demo_epoch: float = time.time()
+
+        # Zone transitions: zones per MMSI (plus the last vessel data) from the
+        # previous snapshot, None until the first snapshot was built
+        self._zone_state: dict[int, tuple[tuple[str, ...], dict[str, Any]]] | None = None
+        self._zone_seen: set[int] = set()
+        self._zone_events_pending: list[tuple[str, dict[str, Any]]] = []
+        self._zone_warmup_until: float = time.monotonic() + ZONE_EVENT_WARMUP_SECONDS
+        self._zone_events_total: dict[str, int] = {
+            ZONE_EVENT_TYPE_ENTERED: 0,
+            ZONE_EVENT_TYPE_LEFT: 0,
+        }
+
+    # ------------------------------------------------------------------
+    # Public read-only properties
+    # ------------------------------------------------------------------
+    @property
+    def tracker_min_write_seconds(self) -> int:
+        """Minimum seconds between two recorded device tracker states."""
+        return self._tracker_min_write
+
+    @property
+    def zones(self) -> list[AisHubZone]:
+        """Configured zones."""
+        return list(self._zones)
+
+    @property
+    def zone_events_total(self) -> dict[str, int]:
+        """Number of zone events fired since the last start, per event type."""
+        return dict(self._zone_events_total)
+
+    @property
+    def zone_warmup_active(self) -> bool:
+        """True while new tankers inside a zone do not fire 'entered' yet."""
+        return time.monotonic() < self._zone_warmup_until
 
     # ------------------------------------------------------------------
     # Lifecycle
@@ -1311,6 +1434,7 @@ class AisTankerCoordinator(DataUpdateCoordinator[AisTankerData]):
             "bearing_deg": bearing_deg,
             "source": source,
             "last_seen": dt_util.utc_from_timestamp(last_seen).isoformat(),
+            "zones": zones_containing(self._zones, lat, lon),
         }
 
     def _build_snapshot(self) -> AisTankerData:
@@ -1370,6 +1494,7 @@ class AisTankerCoordinator(DataUpdateCoordinator[AisTankerData]):
             ),
         )
         tracked = [vessel["mmsi"] for vessel in ordered[: self._max_tracked]]
+        self._detect_zone_transitions(vessels)
 
         return AisTankerData(
             vessels=ordered,
@@ -1400,6 +1525,87 @@ class AisTankerCoordinator(DataUpdateCoordinator[AisTankerData]):
                 else None
             ),
         )
+
+    # ------------------------------------------------------------------
+    # Zone events
+    # ------------------------------------------------------------------
+    def _detect_zone_transitions(self, vessels: dict[int, dict[str, Any]]) -> None:
+        """Compare zone membership with the previous snapshot and queue events.
+
+        The first snapshot only sets the baseline. During the warm-up window
+        after a start, tankers that show up inside a zone (reason 'appeared')
+        do not fire 'entered', so a restart does not trigger every automation.
+        Events are fired after the listeners were updated, see
+        async_update_listeners.
+        """
+        if not self._zones:
+            return
+        current: dict[int, tuple[tuple[str, ...], dict[str, Any]]] = {
+            mmsi: (tuple(vessel["zones"]), vessel)
+            for mmsi, vessel in vessels.items()
+            if vessel.get("zones")
+        }
+        previous = self._zone_state
+        seen_before = self._zone_seen
+        self._zone_state = current
+        self._zone_seen = set(vessels)
+        if previous is None:
+            return
+
+        warmup = self.zone_warmup_active
+        pending = self._zone_events_pending
+
+        for mmsi, (zones_before, last_vessel) in previous.items():
+            zones_now = current[mmsi][0] if mmsi in current else ()
+            left = [zone for zone in zones_before if zone not in zones_now]
+            if not left:
+                continue
+            vessel = vessels.get(mmsi)
+            reason = ZONE_REASON_MOVED if vessel is not None else ZONE_REASON_LOST
+            for zone in left:
+                pending.append(
+                    (ZONE_EVENT_TYPE_LEFT, zone_event_payload(vessel or last_vessel, zone, reason))
+                )
+
+        for mmsi, (zones_now, vessel) in current.items():
+            zones_before = previous[mmsi][0] if mmsi in previous else ()
+            entered = [zone for zone in zones_now if zone not in zones_before]
+            if not entered:
+                continue
+            reason = ZONE_REASON_MOVED if mmsi in seen_before else ZONE_REASON_APPEARED
+            if warmup and reason == ZONE_REASON_APPEARED:
+                continue
+            for zone in entered:
+                pending.append((ZONE_EVENT_TYPE_ENTERED, zone_event_payload(vessel, zone, reason)))
+
+    @callback
+    def async_update_listeners(self) -> None:
+        """Update all listeners, then fire the queued zone events."""
+        super().async_update_listeners()
+        self._async_fire_zone_events()
+
+    @callback
+    def _async_fire_zone_events(self) -> None:
+        """Fire queued zone events on the bus and to the event entities."""
+        if not self._zone_events_pending:
+            return
+        events, self._zone_events_pending = self._zone_events_pending, []
+        if self._stopped:
+            return
+        signal = SIGNAL_ZONE_EVENT.format(entry_id=self.config_entry.entry_id)
+        for event_type, payload in events:
+            self._zone_events_total[event_type] = self._zone_events_total.get(event_type, 0) + 1
+            bus_event = EVENT_ZONE_ENTERED if event_type == ZONE_EVENT_TYPE_ENTERED else EVENT_ZONE_LEFT
+            LOGGER.debug(
+                "Tanker %s (%s) %s zone '%s' (%s)",
+                payload.get("name"),
+                payload.get("mmsi"),
+                event_type,
+                payload.get("zone"),
+                payload.get("reason"),
+            )
+            self.hass.bus.async_fire(bus_event, payload)
+            async_dispatcher_send(self.hass, signal, event_type, payload)
 
 
 type AisTankerConfigEntry = ConfigEntry[AisTankerCoordinator]

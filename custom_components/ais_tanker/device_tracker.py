@@ -17,7 +17,7 @@ from homeassistant.helpers import entity_registry as er
 from homeassistant.helpers.entity_platform import AddConfigEntryEntitiesCallback
 from homeassistant.helpers.update_coordinator import CoordinatorEntity
 
-from .const import DOMAIN, LOGGER, TRACKER_HEARTBEAT_SECONDS, TRACKER_MIN_WRITE_SECONDS
+from .const import DOMAIN, LOGGER, TRACKER_HEARTBEAT_SECONDS
 from .coordinator import AisTankerConfigEntry, AisTankerCoordinator
 
 TRACKER_ATTRIBUTE_KEYS: tuple[str, ...] = (
@@ -42,6 +42,7 @@ TRACKER_ATTRIBUTE_KEYS: tuple[str, ...] = (
     "bearing_deg",
     "source",
     "last_seen",
+    "zones",
 )
 
 # Values that change with almost every AIS message. They stay available as live
@@ -182,6 +183,7 @@ class AisTankerTracker(CoordinatorEntity[AisTankerCoordinator], TrackerEntity):
             attrs.get("destination"),
             attrs.get("draught_m"),
             attrs.get("source"),
+            tuple(attrs.get("zones") or ()),
         )
 
     @callback
@@ -191,8 +193,9 @@ class AisTankerTracker(CoordinatorEntity[AisTankerCoordinator], TrackerEntity):
         AIS sends a position every few seconds. Writing every one of them for up
         to max_tracked_vessels trackers floods the recorder database, so a tracker
         writes its state only when it becomes available or unavailable, when a
-        relevant value changed and TRACKER_MIN_WRITE_SECONDS have passed, or as a
-        heartbeat after TRACKER_HEARTBEAT_SECONDS.
+        relevant value changed and the configured minimum interval (option
+        tracker_min_write_seconds, default 300 s) has passed, or as a heartbeat
+        after TRACKER_HEARTBEAT_SECONDS (never shorter than the minimum interval).
         """
         self._update_from_data()
         signature = self._signature()
@@ -200,10 +203,12 @@ class AisTankerTracker(CoordinatorEntity[AisTankerCoordinator], TrackerEntity):
         if self._last_signature is not None:
             availability_changed = signature[0] != self._last_signature[0]
             elapsed = now - self._last_write
+            min_write = self.coordinator.tracker_min_write_seconds
+            heartbeat = max(TRACKER_HEARTBEAT_SECONDS, min_write)
             if not availability_changed:
-                if signature == self._last_signature and elapsed < TRACKER_HEARTBEAT_SECONDS:
+                if signature == self._last_signature and elapsed < heartbeat:
                     return
-                if elapsed < TRACKER_MIN_WRITE_SECONDS:
+                if elapsed < min_write:
                     return
         self._last_signature = signature
         self._last_write = now

@@ -29,6 +29,7 @@ AIS Tanker Tracker filters the AIS traffic around you (or around any sea area yo
   - Priority when several sources report the same ship: local SDR > aisstream.io > AISHub
 - **Tanker classification**: AIS tanker category (general / hazardous cat A-D), size class by length (Coastal/Bunker, Handysize/MR, Panamax/Aframax, Suezmax, VLCC/ULCC)
 - **Laden / Ballast estimate** from reported draught vs. ship length
+- **Zone events**: `ais_tanker_zone_entered` / `ais_tanker_zone_left` events plus one event entity per zone, for automations without templates
 - **Entities**: one overview sensor with all vessels as attributes, counters for local and global sources, and a `device_tracker` for the nearest N tankers (so they appear on the standard HA map and in automations)
 - **Persistent ship database**: ship type, name and dimensions are cached on disk, so tankers are recognised immediately after a restart instead of waiting for the next static AIS message (sent only every 6 minutes)
 - **Bundled Lovelace card** `custom:tanker-radar-card`, loaded automatically, no extra resource needed
@@ -91,6 +92,7 @@ Everything is set in the UI. All fields can be changed later under **Configure**
 | AISHub request interval | Seconds between AISHub requests, minimum 65 (AISHub allows one request per minute) |
 | Stale timeout | Ships without an update for this long are removed (default 30 min) |
 | Maximum device trackers | Nearest N tankers that get a `device_tracker` (default 50, 0 = none) |
+| Device tracker update interval | Minimum seconds between two recorded tracker states, 30-3600 (default 300). Lower = smoother movement on the map, but a faster growing database |
 | Create demo tankers | Three simulated tankers in the Strait of Malacca, useful to try the card without any data source |
 
 ### Zones
@@ -140,7 +142,8 @@ Tip: feed your station to AISHub as well. Station owners get an AISHub API key i
 | `sensor.ais_tanker_overview` | Number of active tankers. Attributes: `vessels` (list with all data, up to 500), counters per source, feed status of MQTT / aisstream.io / AISHub |
 | `sensor.ais_tanker_local_count` | Tankers received by the local SDR |
 | `sensor.ais_tanker_global_count` | Tankers from aisstream.io + AISHub |
-| `device_tracker.ais_tanker_<mmsi>` | Nearest N tankers with position, name, IMO, call sign, type, size class, speed, course, heading, draught, load state, dimensions, destination, ETA, distance and bearing from home, source, last seen |
+| `device_tracker.ais_tanker_<mmsi>` | Nearest N tankers with position, name, IMO, call sign, type, size class, speed, course, heading, draught, load state, dimensions, destination, ETA, distance and bearing from home, source, last seen, zones |
+| `event.ais_tanker_zone_<zone>` | One per configured zone. Fires `entered` / `left` with the tanker data as attributes (see [Zone events](#zone-events)) |
 
 Example automation trigger: a laden VLCC within 25 km.
 
@@ -155,13 +158,91 @@ triggers:
          | list | count > 0 }}
 ```
 
+## Zone events
+
+When a tanker enters or leaves one of the configured [zones](#zones), the integration fires a Home Assistant event.
+Zones can overlap; a tanker inside two zones fires one event per zone.
+
+| Event | When |
+|---|---|
+| `ais_tanker_zone_entered` | A tanker is now inside the zone |
+| `ais_tanker_zone_left` | A tanker is no longer inside the zone |
+
+Event data:
+
+| Field | Example |
+|---|---|
+| `zone` | `Singapore` (zone name as configured) |
+| `mmsi`, `name` | `563123456`, `OCEAN STAR` |
+| `load_status` | `Laden`, `Ballast`, `Partial / Transit` or `Unknown` |
+| `vessel_class` | `Coastal / Bunker Tanker`, `Handysize / MR Tanker`, `Panamax / Aframax`, `Suezmax`, `VLCC / ULCC Supertanker` |
+| `vessel_type_code`, `vessel_type_label` | `81`, `Tanker (Hazardous Cat A)` |
+| `draught_m`, `speed_knots`, `course`, `destination` | `15.1`, `12.3`, `95.0`, `SINGAPORE` |
+| `lat`, `lon`, `source` | position of the tanker, `local_sdr` / `aisstream` / `aishub` / `demo` |
+| `reason` | `moved` = crossed the zone border, `appeared` = first seen inside the zone, `lost` = no more data (stale timeout, out of coverage) |
+
+Good to know:
+
+- Every tanker in the feeds counts, not only the nearest ones with a `device_tracker`.
+- After a Home Assistant start or a reload, tankers that are already inside a zone during the first 5 minutes do **not**
+  fire `entered`, so a restart does not trigger all your zone automations. Leaving is always reported.
+- Use `reason: moved` in the event data if you only want real border crossings.
+
+Example: notification when a laden tanker enters the Singapore zone.
+
+```yaml
+alias: Laden tanker entered Singapore
+triggers:
+  - trigger: event
+    event_type: ais_tanker_zone_entered
+    event_data:
+      zone: Singapore
+      load_status: Laden
+actions:
+  - action: persistent_notification.create
+    data:
+      title: "Tanker entered {{ trigger.event.data.zone }}"
+      message: >
+        {{ trigger.event.data.name }} (MMSI {{ trigger.event.data.mmsi }}),
+        {{ trigger.event.data.vessel_class }}, {{ trigger.event.data.load_status }},
+        heading to {{ trigger.event.data.destination or 'unknown' }}
+mode: queued
+```
+
+### Event entities
+
+Each zone also gets an event entity (`event.ais_tanker_zone_singapore` for the zone `Singapore`) on the
+AIS Tanker Tracker device. It fires the event types `entered` and `left` with the same data as attributes, so you can
+pick it in the automation editor without typing an event name:
+
+```yaml
+alias: Tanker left Hormuz
+triggers:
+  - trigger: state
+    entity_id: event.ais_tanker_zone_hormuz
+    not_from: unavailable
+conditions:
+  - condition: state
+    entity_id: event.ais_tanker_zone_hormuz
+    attribute: event_type
+    state: left
+actions:
+  - action: persistent_notification.create
+    data:
+      message: "{{ trigger.to_state.attributes.name }} left the Strait of Hormuz"
+mode: queued
+```
+
+Removing a zone in the options also removes its event entity.
+
 ## Database size
 
 The integration is built to keep the recorder small:
 
 - The `vessels` list of the overview sensor and its message counters are excluded from the recorder.
 - Device trackers write a new state at most every 5 minutes (plus a 30 minute heartbeat), and their fast-changing
-  attributes (speed, course, heading, distance, bearing, last seen) are not recorded.
+  attributes (speed, course, heading, distance, bearing, last seen) are not recorded. The interval can be changed in
+  the options (**Device tracker update interval**, 30-3600 seconds).
 
 If you do not need tanker history at all, you can exclude the entities completely in `configuration.yaml`:
 

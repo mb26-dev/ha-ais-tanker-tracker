@@ -6,12 +6,16 @@ from typing import Any
 
 from homeassistant.components.sensor import SensorEntity, SensorStateClass
 from homeassistant.core import HomeAssistant, callback
-from homeassistant.helpers.device_registry import DeviceEntryType, DeviceInfo
 from homeassistant.helpers.entity_platform import AddConfigEntryEntitiesCallback
 from homeassistant.helpers.update_coordinator import CoordinatorEntity
 
-from .const import DEFAULT_TITLE, DOMAIN, INTEGRATION_VERSION, MAX_OVERVIEW_VESSELS
-from .coordinator import AisTankerConfigEntry, AisTankerCoordinator, AisTankerData
+from .const import MAX_OVERVIEW_VESSELS
+from .coordinator import (
+    AisTankerConfigEntry,
+    AisTankerCoordinator,
+    AisTankerData,
+    service_device_info,
+)
 
 UNIT_VESSELS = "vessels"
 
@@ -51,14 +55,7 @@ class AisTankerBaseSensor(CoordinatorEntity[AisTankerCoordinator], SensorEntity)
         self._attr_translation_key = key
         self._attr_unique_id = f"{entry.entry_id}_{key}"
         self.entity_id = f"sensor.{object_id}"
-        self._attr_device_info = DeviceInfo(
-            identifiers={(DOMAIN, entry.entry_id)},
-            name=DEFAULT_TITLE,
-            manufacturer="AIS-catcher / AISHub",
-            model="AIS Tanker Tracker",
-            sw_version=INTEGRATION_VERSION,
-            entry_type=DeviceEntryType.SERVICE,
-        )
+        self._attr_device_info = service_device_info(entry.entry_id)
         self._update_from_data()
 
     @property
