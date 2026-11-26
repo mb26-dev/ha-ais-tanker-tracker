@@ -13,6 +13,7 @@
           "aishub_scan_interval": "AISHub request interval",
           "stale_timeout_minutes": "Stale timeout",
           "max_tracked_vessels": "Maximum device trackers",
+          "tracker_min_write_seconds": "Device tracker update interval",
           "enable_demo_vessels": "Create demo tankers"
         },
         "data_description": {
@@ -24,6 +25,7 @@
           "aishub_scan_interval": "Seconds between two AISHub requests (minimum 65, AISHub allows 1 request per minute).",
           "stale_timeout_minutes": "Vessels without updates for this time are removed.",
           "max_tracked_vessels": "Nearest tankers that get a device_tracker entity (0 disables trackers).",
+          "tracker_min_write_seconds": "Minimum seconds between two recorded states of a device tracker (30-3600, default 300). Lower values move the tankers more smoothly on the map but let the recorder database grow faster. Without changes a tracker still writes a heartbeat every 30 minutes (or after this interval if it is longer).",
           "enable_demo_vessels": "Adds 3 moving test tankers in the Andaman Sea / Strait of Malacca."
         }
       }
@@ -32,6 +34,7 @@
       "invalid_topic": "Invalid MQTT topic.",
       "invalid_zones": "Invalid zone definition. Use name:latmin,latmax,lonmin,lonmax with latmin < latmax and lonmin < lonmax.",
       "scan_interval_too_low": "The AISHub interval must be at least 65 seconds.",
+      "tracker_interval_out_of_range": "The device tracker interval must be between 30 and 3600 seconds.",
       "no_source": "Enable at least one source: MQTT, aisstream.io key, AISHub key or demo vessels."
     },
     "abort": {
@@ -53,6 +56,7 @@
           "aishub_scan_interval": "AISHub request interval",
           "stale_timeout_minutes": "Stale timeout",
           "max_tracked_vessels": "Maximum device trackers",
+          "tracker_min_write_seconds": "Device tracker update interval",
           "enable_demo_vessels": "Create demo tankers"
         },
         "data_description": {
@@ -64,6 +68,7 @@
           "aishub_scan_interval": "Seconds between two AISHub requests (minimum 65, AISHub allows 1 request per minute).",
           "stale_timeout_minutes": "Vessels without updates for this time are removed.",
           "max_tracked_vessels": "Nearest tankers that get a device_tracker entity (0 disables trackers).",
+          "tracker_min_write_seconds": "Minimum seconds between two recorded states of a device tracker (30-3600, default 300). Lower values move the tankers more smoothly on the map but let the recorder database grow faster. Without changes a tracker still writes a heartbeat every 30 minutes (or after this interval if it is longer).",
           "enable_demo_vessels": "Adds 3 moving test tankers in the Andaman Sea / Strait of Malacca."
         }
       }
@@ -72,6 +77,7 @@
       "invalid_topic": "Invalid MQTT topic.",
       "invalid_zones": "Invalid zone definition. Use name:latmin,latmax,lonmin,lonmax with latmin < latmax and lonmin < lonmax.",
       "scan_interval_too_low": "The AISHub interval must be at least 65 seconds.",
+      "tracker_interval_out_of_range": "The device tracker interval must be between 30 and 3600 seconds.",
       "no_source": "Enable at least one source: MQTT, aisstream.io key, AISHub key or demo vessels."
     }
   },
@@ -85,6 +91,19 @@
       },
       "global_count": {
         "name": "Global network tankers"
+      }
+    },
+    "event": {
+      "zone": {
+        "name": "Zone {zone}",
+        "state_attributes": {
+          "event_type": {
+            "state": {
+              "entered": "Entered",
+              "left": "Left"
+            }
+          }
+        }
       }
     }
   }

@@ -35,13 +35,16 @@ from .const import (
     CONF_MAX_TRACKED_VESSELS,
     CONF_MQTT_TOPIC,
     CONF_STALE_TIMEOUT_MINUTES,
+    CONF_TRACKER_MIN_WRITE_SECONDS,
     DEFAULT_OPTIONS,
     DEFAULT_TITLE,
     DOMAIN,
     MAX_SCAN_INTERVAL,
     MAX_STALE_TIMEOUT_MINUTES,
     MAX_TRACKED_LIMIT,
+    MAX_TRACKER_WRITE_SECONDS,
     MIN_STALE_TIMEOUT_MINUTES,
+    MIN_TRACKER_WRITE_SECONDS,
 )
 from .coordinator import parse_zones
 
@@ -118,6 +121,18 @@ def _build_schema(values: Mapping[str, Any]) -> vol.Schema:
                 )
             ),
             vol.Required(
+                CONF_TRACKER_MIN_WRITE_SECONDS,
+                default=int(values[CONF_TRACKER_MIN_WRITE_SECONDS]),
+            ): NumberSelector(
+                NumberSelectorConfig(
+                    min=MIN_TRACKER_WRITE_SECONDS,
+                    max=MAX_TRACKER_WRITE_SECONDS,
+                    step=1,
+                    mode=NumberSelectorMode.BOX,
+                    unit_of_measurement="s",
+                )
+            ),
+            vol.Required(
                 CONF_ENABLE_DEMO_VESSELS,
                 default=bool(values[CONF_ENABLE_DEMO_VESSELS]),
             ): BooleanSelector(),
@@ -144,6 +159,11 @@ def _validate_input(user_input: Mapping[str, Any]) -> tuple[dict[str, Any], dict
             user_input.get(CONF_MAX_TRACKED_VESSELS, DEFAULT_OPTIONS[CONF_MAX_TRACKED_VESSELS])
         ),
         CONF_ENABLE_DEMO_VESSELS: bool(user_input.get(CONF_ENABLE_DEMO_VESSELS, False)),
+        CONF_TRACKER_MIN_WRITE_SECONDS: int(
+            user_input.get(
+                CONF_TRACKER_MIN_WRITE_SECONDS, DEFAULT_OPTIONS[CONF_TRACKER_MIN_WRITE_SECONDS]
+            )
+        ),
     }
 
     if cleaned[CONF_ENABLE_MQTT] and not _valid_subscribe_topic(cleaned[CONF_MQTT_TOPIC]):
@@ -156,6 +176,13 @@ def _validate_input(user_input: Mapping[str, Any]) -> tuple[dict[str, Any], dict
 
     if cleaned[CONF_AISHUB_SCAN_INTERVAL] < AISHUB_MIN_INTERVAL_SECONDS:
         errors[CONF_AISHUB_SCAN_INTERVAL] = "scan_interval_too_low"
+
+    if not (
+        MIN_TRACKER_WRITE_SECONDS
+        <= cleaned[CONF_TRACKER_MIN_WRITE_SECONDS]
+        <= MAX_TRACKER_WRITE_SECONDS
+    ):
+        errors[CONF_TRACKER_MIN_WRITE_SECONDS] = "tracker_interval_out_of_range"
 
     if not (
         cleaned[CONF_ENABLE_MQTT]

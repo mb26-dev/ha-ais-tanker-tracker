@@ -13,7 +13,7 @@ CARD_FILENAME: Final = "tanker-radar-card.js"
 CARD_URL_BASE: Final = "/ais_tanker_static"
 
 DEFAULT_TITLE: Final = "AIS Tanker Tracker"
-INTEGRATION_VERSION: Final = "1.2.4"
+INTEGRATION_VERSION: Final = "1.2.5"
 
 # ---------------------------------------------------------------------------
 # Config / options keys
@@ -27,6 +27,7 @@ CONF_AISHUB_SCAN_INTERVAL: Final = "aishub_scan_interval"
 CONF_STALE_TIMEOUT_MINUTES: Final = "stale_timeout_minutes"
 CONF_MAX_TRACKED_VESSELS: Final = "max_tracked_vessels"
 CONF_ENABLE_DEMO_VESSELS: Final = "enable_demo_vessels"
+CONF_TRACKER_MIN_WRITE_SECONDS: Final = "tracker_min_write_seconds"
 
 DEFAULT_ENABLE_MQTT: Final = True
 DEFAULT_MQTT_TOPIC: Final = "ais/#"
@@ -37,6 +38,8 @@ DEFAULT_AISHUB_SCAN_INTERVAL: Final = 90
 DEFAULT_STALE_TIMEOUT_MINUTES: Final = 30
 DEFAULT_MAX_TRACKED_VESSELS: Final = 50
 DEFAULT_ENABLE_DEMO_VESSELS: Final = False
+# Entries created before 1.2.5 do not have this option and fall back to it
+DEFAULT_TRACKER_MIN_WRITE_SECONDS: Final = 300
 
 DEFAULT_OPTIONS: Final[dict[str, Any]] = {
     CONF_ENABLE_MQTT: DEFAULT_ENABLE_MQTT,
@@ -48,6 +51,7 @@ DEFAULT_OPTIONS: Final[dict[str, Any]] = {
     CONF_STALE_TIMEOUT_MINUTES: DEFAULT_STALE_TIMEOUT_MINUTES,
     CONF_MAX_TRACKED_VESSELS: DEFAULT_MAX_TRACKED_VESSELS,
     CONF_ENABLE_DEMO_VESSELS: DEFAULT_ENABLE_DEMO_VESSELS,
+    CONF_TRACKER_MIN_WRITE_SECONDS: DEFAULT_TRACKER_MIN_WRITE_SECONDS,
 }
 
 # Limits for the UI
@@ -55,6 +59,8 @@ MIN_STALE_TIMEOUT_MINUTES: Final = 1
 MAX_STALE_TIMEOUT_MINUTES: Final = 1440
 MAX_TRACKED_LIMIT: Final = 500
 MAX_SCAN_INTERVAL: Final = 3600
+MIN_TRACKER_WRITE_SECONDS: Final = 30
+MAX_TRACKER_WRITE_SECONDS: Final = 3600
 
 # ---------------------------------------------------------------------------
 # AISHub
@@ -98,14 +104,41 @@ DATA_AISHUB_LAST_REQUEST: Final = "aishub_last_request_monotonic"
 # ---------------------------------------------------------------------------
 COORDINATOR_INTERVAL_SECONDS: Final = 15
 PUSH_DEBOUNCE_SECONDS: Final = 5
-# Device trackers: minimum seconds between two recorded state changes, and a
-# heartbeat write even when nothing relevant changed (keeps the recorder small)
-TRACKER_MIN_WRITE_SECONDS: Final = 300
+# Device trackers: minimum seconds between two recorded state changes (default,
+# configurable with CONF_TRACKER_MIN_WRITE_SECONDS), and a heartbeat write even
+# when nothing relevant changed (keeps the recorder small). The heartbeat is
+# never shorter than the configured minimum interval.
+TRACKER_MIN_WRITE_SECONDS: Final = DEFAULT_TRACKER_MIN_WRITE_SECONDS
 TRACKER_HEARTBEAT_SECONDS: Final = 1800
 MAX_RAW_CACHE: Final = 5000
 MAX_REJECTED_CACHE: Final = 20000
 REJECTED_TTL_SECONDS: Final = 6 * 3600
 MAX_OVERVIEW_VESSELS: Final = 500
+
+# ---------------------------------------------------------------------------
+# Zone events
+# ---------------------------------------------------------------------------
+# Home Assistant bus events, fired when a tanker enters or leaves one of the
+# configured zones
+EVENT_ZONE_ENTERED: Final = "ais_tanker_zone_entered"
+EVENT_ZONE_LEFT: Final = "ais_tanker_zone_left"
+# Event types of the event entities (one entity per zone)
+ZONE_EVENT_TYPE_ENTERED: Final = "entered"
+ZONE_EVENT_TYPE_LEFT: Final = "left"
+# Why a transition happened:
+#   moved    - the tanker crossed the zone border
+#   appeared - the tanker was not tracked before and showed up inside the zone
+#   lost     - the tanker was inside the zone and is no longer tracked
+#              (stale timeout, out of coverage, or no longer a tanker)
+ZONE_REASON_MOVED: Final = "moved"
+ZONE_REASON_APPEARED: Final = "appeared"
+ZONE_REASON_LOST: Final = "lost"
+# After a start or reload the feeds fill up again. During this window tankers
+# that show up inside a zone do not fire "entered" (reason appeared), so a
+# restart does not trigger every zone automation.
+ZONE_EVENT_WARMUP_SECONDS: Final = 300
+# Dispatcher signal for the event entities, formatted with the config entry id
+SIGNAL_ZONE_EVENT: Final = "ais_tanker_zone_event_{entry_id}"
 
 # Persistent cache of static vessel data (survives restarts and reloads)
 STORAGE_VERSION: Final = 1
