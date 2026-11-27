@@ -8,7 +8,7 @@
 </p>
 
 <p align="center">
-  <a href="https://github.com/mb26-dev/ha-ais-tanker-tracker/releases"><img src="https://img.shields.io/badge/release-v1.2.6-blue" alt="Release v1.2.6"></a>
+  <a href="https://github.com/mb26-dev/ha-ais-tanker-tracker/releases"><img src=".github/badge-release.svg" alt="Release v1.2.6"></a>
   <img src="https://img.shields.io/badge/Home%20Assistant-2025.1%2B-41BDF5?style=flat-square&logo=home-assistant&logoColor=white" alt="Home Assistant">
   <a href="https://my.home-assistant.io/redirect/hacs_repository/?owner=mb26-dev&repository=ha-ais-tanker-tracker&category=integration"><img src="https://img.shields.io/badge/HACS-Default-41BDF5?style=flat-square" alt="HACS Default"></a>
   <a href="LICENSE"><img src="https://img.shields.io/badge/license-MIT-green" alt="License MIT"></a>
